@@ -860,14 +860,15 @@ DiagnosticResponse ArduinoInterface::selectTrack(const unsigned char trackIndex,
 #ifdef _WIN32		
 		sprintf_s(buf, "%c%02i%c", COMMAND_GOTOTRACK_REPORT, trackIndex, flags);
 #else
-		sprintf(buf, "%c%02i%c", COMMAND_GOTOTRACK_REPORT, trackIndex, flags);
+		snprintf(buf, sizeof(buf), "%c%02i%c", COMMAND_GOTOTRACK_REPORT,
+			trackIndex, flags);
 #endif	
 	}
 	else {
 #ifdef _WIN32			
 		sprintf_s(buf, "%c%02i", COMMAND_GOTOTRACK, trackIndex);
 #else		
-		sprintf(buf, "%c%02i", COMMAND_GOTOTRACK, trackIndex);
+		snprintf(buf, sizeof(buf), "%c%02i", COMMAND_GOTOTRACK, trackIndex);
 #endif	
 	}
 
@@ -2884,5 +2885,4 @@ DiagnosticResponse ArduinoInterface::eeprom_SetIndexAlignMode(bool enabled) {
 	m_lastError = DiagnosticResponse::drOK;
 	return m_lastError;
 }
-
 

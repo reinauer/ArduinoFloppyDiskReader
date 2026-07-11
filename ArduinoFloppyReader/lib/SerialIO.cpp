@@ -351,7 +351,10 @@ void SerialIO::enumSerialPorts(std::vector<SerialPortInformation>& serialPorts) 
 	while ((entry = readdir(dir))) {
 #ifdef __APPLE__
 		std::string tmp = entry->d_name;
-		if (tmp.substr(0,7) != "tty.usb") continue;
+		// Use callout devices for outgoing connections.  Unlike tty devices,
+		// cu devices do not wait for modem carrier and are the conventional
+		// macOS endpoint for USB serial applications.
+		if (tmp.rfind("cu.usb", 0) != 0) continue;
 		std::string name = "/dev/" + std::string(entry->d_name);
 		SerialPortInformation prt;
 		quicka2w(name, prt.portName);

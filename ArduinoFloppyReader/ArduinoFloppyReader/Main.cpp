@@ -135,7 +135,7 @@ void listSettings(const std::wstring& port) {
 	ArduinoFloppyReader::DiagnosticResponse resp = io.openPort(port);
 	if (resp != ArduinoFloppyReader::DiagnosticResponse::drOK) {
 		printf("Unable to connect to device: \n");
-		printf(io.getLastErrorStr().c_str());
+		printf("%s", io.getLastErrorStr().c_str());
 		return;
 	}
 
@@ -154,7 +154,7 @@ void programmeSetting(const std::wstring& port, const std::wstring& settingName,
 	ArduinoFloppyReader::DiagnosticResponse resp = io.openPort(port);
 	if (resp != ArduinoFloppyReader::DiagnosticResponse::drOK) {
 		printf("Unable to connect to device: \n");
-		printf(io.getLastErrorStr().c_str());
+		printf("%s", io.getLastErrorStr().c_str());
 		return;
 	}
 
@@ -594,4 +594,3 @@ int main(int argc, char* argv[], char *envp[])
 	
     return 0;
 }
-

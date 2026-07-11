@@ -287,10 +287,8 @@ bool attemptFixSector(const DecodedTrack& decodedTrack, DecodedSector& outputSec
 		int ones = 0;
 	} SectorCounter[8];
 
-	SectorCounter* sectorSum = new SectorCounter[SECTOR_BYTES + SECTOR_BYTES];
+	SectorCounter* sectorSum = new SectorCounter[SECTOR_BYTES + SECTOR_BYTES]{};
 	if (!sectorSum) return false;
-
-	memset(sectorSum, 0, sizeof(sectorSum));
 
 	// Calculate the number of '1's and '0's in each block
 	for (const DecodedSector& sec : decodedTrack.invalidSectors[sectorNumber]) 
@@ -568,7 +566,7 @@ bool ADFWriter::runDiagnostics(const std::wstring& portName, std::function<void(
 #ifdef _WIN32	
 	sprintf_s(convert, "%ls", portName.c_str());
 #else
-	sprintf(convert, "%ls", portName.c_str());
+	snprintf(convert, sizeof(convert), "%ls", portName.c_str());
 #endif
 	msg << convert << " without CTS";
 	messageOutput(false,msg.str());
@@ -615,7 +613,11 @@ bool ADFWriter::runDiagnostics(const std::wstring& portName, std::function<void(
 #ifdef _WIN32	
 	sprintf_s(buffer, "Board is running firmware version %i.%i.%i %s%s\n", version.major, version.minor, version.buildNumber, (version.deviceFlags1 & FLAGS_FIRMWARE_BETA)?"beta ":"", version.fullControlMod ? " (modded for DiskChange support)" : "");
 #else	
-	sprintf(buffer, "Board is running firmware version %i.%i.%i %s%s\n", version.major, version.minor, version.buildNumber, (version.deviceFlags1 & FLAGS_FIRMWARE_BETA) ? "beta " : "", version.fullControlMod ? " (modded for DiskChange support)" : "");
+	snprintf(buffer, sizeof(buffer),
+		"Board is running firmware version %i.%i.%i %s%s\n", version.major,
+		version.minor, version.buildNumber,
+		(version.deviceFlags1 & FLAGS_FIRMWARE_BETA) ? "beta " : "",
+		version.fullControlMod ? " (modded for DiskChange support)" : "");
 #endif
 	messageOutput(false, buffer);
 
@@ -649,7 +651,8 @@ bool ADFWriter::runDiagnostics(const std::wstring& portName, std::function<void(
 #ifdef _WIN32
 			sprintf_s(latestFirmwareVersion, ">>> Latest version is V%i.%i.%i", major, minor, rev);
 #else
-			sprintf(latestFirmwareVersion, ">>> Latest version is V%i.%i.%i", major, minor, rev);
+			snprintf(latestFirmwareVersion, sizeof(latestFirmwareVersion),
+				">>> Latest version is V%i.%i.%i", major, minor, rev);
 #endif
 			messageOutput(false, latestFirmwareVersion);
 			messageOutput(false, "");
@@ -751,7 +754,7 @@ bool ADFWriter::runDiagnostics(const std::wstring& portName, std::function<void(
 #ifdef _WIN32	
 			sprintf_s(buffer, "Drive RPM measured as %0.2f RPM\n", rpm);
 #else	
-			sprintf(buffer, "Drive RPM measured as %0.2f RPM\n", rpm);
+			snprintf(buffer, sizeof(buffer), "Drive RPM measured as %0.2f RPM\n", rpm);
 #endif
 			messageOutput(false, buffer);
 			if ((rpm < 280) || (rpm > 320)) {
@@ -1603,7 +1606,8 @@ ADFResult ADFWriter::diskToIBMST(const std::wstring& outputFile, const bool inHD
 	// First step is to ID the disk
 	// Select the track we're working on
 	if (m_device.selectTrack(0) != DiagnosticResponse::drOK) return ADFResult::adfrDriveError;
-	if (m_device.selectSurface(DiskSurface::dsLower) != DiagnosticResponse::drOK) ADFResult::adfrDriveError;
+	if (m_device.selectSurface(DiskSurface::dsLower) != DiagnosticResponse::drOK)
+		return ADFResult::adfrDriveError;
 	
 	// To hold a raw track
 	RawTrackDataHD data;
@@ -1658,8 +1662,10 @@ ADFResult ADFWriter::diskToIBMST(const std::wstring& outputFile, const bool inHD
 		const DiskSurface surface = ((currentTrack % numHeads) == 1) ? DiskSurface::dsUpper : DiskSurface::dsLower;
 
 		// Select the track we're working on
-		if (m_device.selectTrack(cylinder) != DiagnosticResponse::drOK) ADFResult::adfrCompletedWithErrors;
-		if (m_device.selectSurface(surface) != DiagnosticResponse::drOK) ADFResult::adfrCompletedWithErrors;
+		if (m_device.selectTrack(cylinder) != DiagnosticResponse::drOK)
+			return ADFResult::adfrDriveError;
+		if (m_device.selectSurface(surface) != DiagnosticResponse::drOK)
+			return ADFResult::adfrDriveError;
 
 		// Reset (but keep the initial ones!)
 		if (currentTrack > 0) decodedTrack.sectors.clear();
@@ -2926,4 +2932,3 @@ ADFResult ADFWriter::GuessDiskDensity(bool& isHD) {
 
 	if (m_device.checkDiskCapacity(isHD) == DiagnosticResponse::drOK) return ADFResult::adfrComplete; else return ADFResult::adfrAborted;
 }
-
