@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="/drawbridge">
+    <file alias="floppy.bmp">../ArduinoFloppyReaderWin/res/floppy.bmp</file>
+    <file alias="fin.bmp">../ArduinoFloppyReaderWin/res/fin.bmp</file>
+    <file alias="fin2.bmp">../ArduinoFloppyReaderWin/res/fin2.bmp</file>
+    <file alias="finpartial.bmp">../ArduinoFloppyReaderWin/res/finpartial.bmp</file>
+    <file alias="finpartial2.bmp">../ArduinoFloppyReaderWin/res/finpartial2.bmp</file>
+    <file alias="scp.bmp">../ArduinoFloppyReaderWin/res/scp.bmp</file>
+    <file alias="dialog_o.bmp">../ArduinoFloppyReaderWin/res/dialog_o.bmp</file>
+    <file alias="app.ico">../ArduinoFloppyReaderWin/res/ArduinoFloppyReaderWin.ico</file>
+  </qresource>
+</RCC>
