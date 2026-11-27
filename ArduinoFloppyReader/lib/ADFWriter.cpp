@@ -2769,9 +2769,10 @@ ADFResult ADFWriter::IPFToDisk(const std::wstring& inputFile, bool extraErases, 
 					data[previousBit].bit = BitType::btOff;
 				}
 				for (size_t bitPos = startPos; bitPos < wInfo.size; bitPos++) {
-					int outPos = (wInfo.start - trackInfo.overlap) % trackInfo.tracklen;
-					if (outPos < 0) outPos += trackInfo.tracklen;
-					data[outPos].bit = BitType::btWeak;
+					// Mark every bit of the weak range, not just the first one
+					int64_t p = ((int64_t)wInfo.start + (int64_t)bitPos - (int64_t)trackInfo.overlap) % (int64_t)trackInfo.tracklen;
+					if (p < 0) p += trackInfo.tracklen;
+					data[(size_t)p].bit = BitType::btWeak;
 				}
 				int endingWeakBit = (wInfo.start + (wInfo.size-1) - trackInfo.overlap) % trackInfo.tracklen; if (endingWeakBit<0) endingWeakBit+= trackInfo.tracklen;
 				int nextBit = (wInfo.start + wInfo.size - trackInfo.overlap) % trackInfo.tracklen; if (nextBit < 0) nextBit += trackInfo.tracklen;
