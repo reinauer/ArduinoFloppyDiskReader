@@ -181,6 +181,9 @@ namespace ArduinoFloppyReader {
 		// Version of the above where the command has a parameter on the end (as long as its not char 0)
 		DiagnosticResponse runCommand(const char command, const char parameter = '\0', char* actualResponse = nullptr);
 
+		// The raw seek, without the retry wrapper. selectTrack() calls this.
+		DiagnosticResponse selectTrackInternal(const unsigned char trackIndex, const TrackSearchSpeed searchSpeed, bool ignoreDiskInsertCheck);
+
 		// Apply and change the timeouts on the com port
 		void applyCommTimeouts(bool shortTimeouts);
 

@@ -843,7 +843,7 @@ DiagnosticResponse ArduinoInterface::performNoClickSeek() {
 }
 
 // Select the track, this makes the motor seek to this position
-DiagnosticResponse ArduinoInterface::selectTrack(const unsigned char trackIndex, const TrackSearchSpeed searchSpeed, bool ignoreDiskInsertCheck) {
+DiagnosticResponse ArduinoInterface::selectTrackInternal(const unsigned char trackIndex, const TrackSearchSpeed searchSpeed, bool ignoreDiskInsertCheck) {
 	m_lastCommand = LastCommand::lcGotoTrack;
 
 	if (trackIndex > 83) {
@@ -914,6 +914,18 @@ DiagnosticResponse ArduinoInterface::selectTrack(const unsigned char trackIndex,
 	}
 
 	return m_lastError;
+}
+
+// Seeks to a track. If the Arduino answers with something unexpected (seen on macOS after long flux writes,
+// where stray '!' replies were left in the receive buffer), clear the port and try again - a seek is safe to repeat.
+DiagnosticResponse ArduinoInterface::selectTrack(const unsigned char trackIndex, const TrackSearchSpeed searchSpeed, bool ignoreDiskInsertCheck) {
+	DiagnosticResponse r = selectTrackInternal(trackIndex, searchSpeed, ignoreDiskInsertCheck);
+	for (int attempt = 0; attempt < 2 && r == DiagnosticResponse::drStatusError; attempt++) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));  // let the Arduino finish answering stray bytes
+		m_comPort.purgeBuffers();
+		r = selectTrackInternal(trackIndex, searchSpeed, ignoreDiskInsertCheck);
+	}
+	return r;
 }
 
 // Erases the current track by writing 0xAA to it

@@ -20,6 +20,15 @@ set_target_properties(DrawBridgeQt PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION "2.8.8"
 )
 
+if(APPLE)
+    # Icon shown for the .app in Finder (CFBundleIconFile). The QIcon set in main.cpp only affects the window.
+    set(DRAWBRIDGE_ICNS ${CMAKE_CURRENT_SOURCE_DIR}/DrawBridge.icns)
+    set_source_files_properties(${DRAWBRIDGE_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(DrawBridgeQt PRIVATE ${DRAWBRIDGE_ICNS})
+    set_target_properties(DrawBridgeQt PROPERTIES MACOSX_BUNDLE_ICON_FILE DrawBridge.icns)
+endif()
+
+
 install(TARGETS DrawBridgeQt
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin

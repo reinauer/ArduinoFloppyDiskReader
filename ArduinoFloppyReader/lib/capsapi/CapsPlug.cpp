@@ -37,6 +37,10 @@ void* capi = NULL;
 
 
 
+// Call through the exact prototype. Calling via a (...) pointer breaks on Apple arm64,
+// where variadic arguments are passed on the stack but the library expects registers.
+#define CAPSFN(idx, ret, ...) ((ret (*)(__VA_ARGS__))cpr[idx].proc)
+
 CapsProc cpr[]= {
 	"CAPSInit", NULL,
 	"CAPSExit", NULL,
@@ -66,7 +70,17 @@ SDWORD CapsInit()
 #ifdef WIN32
 	capi = LoadLibrary(L"CAPSImg.dll");
 #else
-	capi = dlopen("libcapsimage.so.5", RTLD_NOW);
+#ifdef __APPLE__
+	// dlopen() on macOS doesn't search /usr/local/lib or Homebrew's prefix for a bare library name,
+	// and DYLD_* variables aren't passed to apps started from Finder, so try the usual places explicitly.
+	capi = dlopen("/usr/local/lib/libcapsimage.so", RTLD_NOW);
+	if (!capi) capi = dlopen("/opt/homebrew/lib/libcapsimage.so", RTLD_NOW);
+	if (!capi) capi = dlopen("/usr/local/lib/libcapsimage.dylib", RTLD_NOW);
+	if (!capi) capi = dlopen("/opt/homebrew/lib/libcapsimage.dylib", RTLD_NOW);
+	if (!capi) capi = dlopen("libcapsimage.so.5", RTLD_NOW);
+#else
+ 	capi = dlopen("libcapsimage.so.5", RTLD_NOW);
+#endif
 	if (!capi) capi = dlopen("libcapsimage.so.5", RTLD_NOW);
 	if (!capi) capi = dlopen("libcapsimage.so.5.1", RTLD_NOW);
 	if (!capi) capi = dlopen("libcapsimage.so.4", RTLD_NOW);
@@ -79,7 +93,7 @@ SDWORD CapsInit()
 	for (int prc=0; cpr[prc].name; prc++)
 		cpr[prc].proc= GETFUNC(capi, cpr[prc].name);
 
-	SDWORD res=cpr[0].proc ? CAPSHOOKN(cpr[0].proc)() : imgeUnsupported;
+	SDWORD res=cpr[0].proc ? CAPSFN(0, SDWORD, void)() : imgeUnsupported;
 
 	return res;
 }
@@ -87,7 +101,7 @@ SDWORD CapsInit()
 // stop caps image support
 SDWORD CapsExit()
 {
-	SDWORD res=cpr[1].proc ? CAPSHOOKN(cpr[1].proc)() : imgeUnsupported;
+	SDWORD res=cpr[1].proc ? CAPSFN(1, SDWORD, void)() : imgeUnsupported;
 
 	if (capi) {
 #ifdef _WIN32
@@ -107,7 +121,7 @@ SDWORD CapsExit()
 // add image container
 SDWORD CapsAddImage()
 {
-	SDWORD res=cpr[2].proc ? CAPSHOOKN(cpr[2].proc)() : -1;
+	SDWORD res=cpr[2].proc ? CAPSFN(2, SDWORD, void)() : -1;
 
 	return res;
 }
@@ -115,7 +129,7 @@ SDWORD CapsAddImage()
 // delete image container
 SDWORD CapsRemImage(SDWORD id)
 {
-	SDWORD res=cpr[3].proc ? CAPSHOOKN(cpr[3].proc)(id) : -1;
+	SDWORD res=cpr[3].proc ? CAPSFN(3, SDWORD, SDWORD)(id) : -1;
 
 	return res;
 }
@@ -123,7 +137,7 @@ SDWORD CapsRemImage(SDWORD id)
 // lock image
 SDWORD CapsLockImage(SDWORD id, PCHAR name)
 {
-	SDWORD res=cpr[4].proc ? CAPSHOOKN(cpr[4].proc)(id, name) : imgeUnsupported;
+	SDWORD res=cpr[4].proc ? CAPSFN(4, SDWORD, SDWORD, PCHAR)(id, name) : imgeUnsupported;
 
 	return res;
 }
@@ -131,7 +145,7 @@ SDWORD CapsLockImage(SDWORD id, PCHAR name)
 // unlock image
 SDWORD CapsUnlockImage(SDWORD id)
 {
-	SDWORD res=cpr[5].proc ? CAPSHOOKN(cpr[5].proc)(id) : imgeUnsupported;
+	SDWORD res=cpr[5].proc ? CAPSFN(5, SDWORD, SDWORD)(id) : imgeUnsupported;
 
 	return res;
 }
@@ -139,7 +153,7 @@ SDWORD CapsUnlockImage(SDWORD id)
 // load and decode complete image
 SDWORD CapsLoadImage(SDWORD id, UDWORD flag)
 {
-	SDWORD res=cpr[6].proc ? CAPSHOOKN(cpr[6].proc)(id, flag) : imgeUnsupported;
+	SDWORD res=cpr[6].proc ? CAPSFN(6, SDWORD, SDWORD, UDWORD)(id, flag) : imgeUnsupported;
 
 	return res;
 }
@@ -147,13 +161,13 @@ SDWORD CapsLoadImage(SDWORD id, UDWORD flag)
 // get image information
 SDWORD CapsGetImageInfo(PCAPSIMAGEINFO pi, SDWORD id)
 {
-	SDWORD res=cpr[7].proc ? CAPSHOOKN(cpr[7].proc)(pi, id) : imgeUnsupported;
+	SDWORD res=cpr[7].proc ? CAPSFN(7, SDWORD, PCAPSIMAGEINFO, SDWORD)(pi, id) : imgeUnsupported;
 
 	return res;
 }
 
 SDWORD CapsGetInfo(void* si, SDWORD id, UDWORD cylinder, UDWORD head, UDWORD inftype, UDWORD infid) {
-	SDWORD res = cpr[13].proc ? CAPSHOOKN(cpr[13].proc)(si, id, cylinder, head, inftype, infid) : imgeUnsupported;
+	SDWORD res = cpr[13].proc ? CAPSFN(13, SDWORD, void*, SDWORD, UDWORD, UDWORD, UDWORD, UDWORD)(si, id, cylinder, head, inftype, infid) : imgeUnsupported;
 
 	return res;
 }
@@ -161,7 +175,7 @@ SDWORD CapsGetInfo(void* si, SDWORD id, UDWORD cylinder, UDWORD head, UDWORD inf
 // load and decode track, or return with the cache
 SDWORD CapsLockTrack(PCAPSTRACKINFO pi, SDWORD id, UDWORD cylinder, UDWORD head, UDWORD flag)
 {
-	SDWORD res=cpr[8].proc ? CAPSHOOKN(cpr[8].proc)(pi, id, cylinder, head, flag) : imgeUnsupported;
+	SDWORD res=cpr[8].proc ? CAPSFN(8, SDWORD, PCAPSTRACKINFO, SDWORD, UDWORD, UDWORD, UDWORD)(pi, id, cylinder, head, flag) : imgeUnsupported;
 
 	return res;
 }
@@ -169,7 +183,7 @@ SDWORD CapsLockTrack(PCAPSTRACKINFO pi, SDWORD id, UDWORD cylinder, UDWORD head,
 // remove track from cache
 SDWORD CapsUnlockTrack(SDWORD id, UDWORD cylinder, UDWORD head)
 {
-	SDWORD res=cpr[9].proc ? CAPSHOOKN(cpr[9].proc)(id, cylinder, head) : imgeUnsupported;
+	SDWORD res=cpr[9].proc ? CAPSFN(9, SDWORD, SDWORD, UDWORD, UDWORD)(id, cylinder, head) : imgeUnsupported;
 
 	return res;
 }
@@ -177,7 +191,7 @@ SDWORD CapsUnlockTrack(SDWORD id, UDWORD cylinder, UDWORD head)
 // remove all tracks from cache
 SDWORD CapsUnlockAllTracks(SDWORD id)
 {
-	SDWORD res=cpr[10].proc ? CAPSHOOKN(cpr[10].proc)(id) : imgeUnsupported;
+	SDWORD res=cpr[10].proc ? CAPSFN(10, SDWORD, SDWORD)(id) : imgeUnsupported;
 
 	return res;
 }
@@ -185,7 +199,7 @@ SDWORD CapsUnlockAllTracks(SDWORD id)
 // get platform name
 PCHAR CapsGetPlatformName(UDWORD pid)
 {
-	PCHAR res=cpr[11].proc ? CAPSHOOKS(cpr[11].proc)(pid) : NULL;
+	PCHAR res=cpr[11].proc ? CAPSFN(11, PCHAR, UDWORD)(pid) : NULL;
 
 	return res;
 }
@@ -193,7 +207,7 @@ PCHAR CapsGetPlatformName(UDWORD pid)
 // lock memory mapped image
 SDWORD CapsLockImageMemory(SDWORD id, PUBYTE buffer, UDWORD length, UDWORD flag)
 {
-	SDWORD res=cpr[12].proc ? CAPSHOOKN(cpr[12].proc)(id, buffer, length, flag) : imgeUnsupported;
+	SDWORD res=cpr[12].proc ? CAPSFN(12, SDWORD, SDWORD, PUBYTE, UDWORD, UDWORD)(id, buffer, length, flag) : imgeUnsupported;
 
 	return res;
 }
